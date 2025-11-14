@@ -23,7 +23,7 @@ public class FornecedorDAO {
             stmt.setString(2, fornecedor.getCnpj());
             stmt.setString(3, fornecedor.getTelefone());
             stmt.setString(4, fornecedor.getEmail());
-            stmt.setBoolean(5, fornecedor.isAtivo());
+            stmt.setBoolean(5, fornecedor.getAtivo());
 
             stmt.executeUpdate();
 
@@ -135,7 +135,7 @@ public class FornecedorDAO {
             stmt.setString(2, fornecedor.getCnpj());
             stmt.setString(3, fornecedor.getTelefone());
             stmt.setString(4, fornecedor.getEmail());
-            stmt.setBoolean(5, fornecedor.isAtivo());
+            stmt.setBoolean(5, fornecedor.getAtivo());
             stmt.setInt(6, fornecedor.getId());
 
             int rowsAffected = stmt.executeUpdate();

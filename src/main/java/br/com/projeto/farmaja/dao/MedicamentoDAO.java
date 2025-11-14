@@ -33,8 +33,8 @@ public class MedicamentoDAO {
                 stmt.setNull(7, Types.INTEGER);
             }
 
-            stmt.setBoolean(8, medicamento.isRequerReceita());
-            stmt.setBoolean(9, medicamento.isAtivo());
+            stmt.setBoolean(8, medicamento.getRequerReceita());
+            stmt.setBoolean(9, medicamento.getAtivo());
 
             stmt.executeUpdate();
 
@@ -198,8 +198,8 @@ public class MedicamentoDAO {
                 stmt.setNull(7, Types.INTEGER);
             }
 
-            stmt.setBoolean(8, medicamento.isRequerReceita());
-            stmt.setBoolean(9, medicamento.isAtivo());
+            stmt.setBoolean(8, medicamento.getRequerReceita());
+            stmt.setBoolean(9, medicamento.getAtivo());
             stmt.setInt(10, medicamento.getId());
 
             int rowsAffected = stmt.executeUpdate();

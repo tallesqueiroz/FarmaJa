@@ -25,7 +25,7 @@ public class UsuarioDAO {
             stmt.setString(4, usuario.getCpf());
             stmt.setString(5, usuario.getTelefone());
             stmt.setString(6, usuario.getTipoUsuario());
-            stmt.setBoolean(7, usuario.isAtivo());
+            stmt.setBoolean(7, usuario.getAtivo());
 
             stmt.executeUpdate();
 
@@ -163,7 +163,7 @@ public class UsuarioDAO {
             stmt.setString(4, usuario.getCpf());
             stmt.setString(5, usuario.getTelefone());
             stmt.setString(6, usuario.getTipoUsuario());
-            stmt.setBoolean(7, usuario.isAtivo());
+            stmt.setBoolean(7, usuario.getAtivo());
             stmt.setInt(8, usuario.getId());
 
             int rowsAffected = stmt.executeUpdate();
