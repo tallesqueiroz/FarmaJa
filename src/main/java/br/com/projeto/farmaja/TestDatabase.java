@@ -53,7 +53,7 @@ public class TestDatabase {
 
             // Teste 4: Verificar usuário admin padrão
             System.out.println("4. Verificando usuário administrador padrão...");
-            String sqlAdmin = "SELECT * FROM usuarios WHERE email = 'admin@farmacia.com'";
+            String sqlAdmin = "SELECT * FROM usuarios WHERE email = 'admin@farmaja.com'";
             ResultSet rsAdmin = stmt.executeQuery(sqlAdmin);
 
             if (rsAdmin.next()) {

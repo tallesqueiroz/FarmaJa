@@ -22,9 +22,9 @@ public class EntregadorMenu {
     private final PedidoController pedidoController;
     private final UsuarioController usuarioController;
 
-    private Usuario entregadorLogado = null;
+    private Usuario entregadorLogado;
 
-    public EntregadorMenu() {
+    public EntregadorMenu(Usuario usuarioLogado) {
 
         this.pedidoDAO = new PedidoDAO();
         this.itemPedidoDAO = new ItemPedidoDAO();
@@ -37,10 +37,11 @@ public class EntregadorMenu {
         this.pedidoController = new PedidoController(
                 pedidoDAO, itemPedidoDAO, medicamentoDAO, usuarioDAO, historicoEntregaDAO
         );
+
+        this.entregadorLogado = usuarioLogado;
     }
 
     public void mostrar() {
-        simularLoginEntregador();
 
         if (entregadorLogado != null) {
             System.out.println("\n--- 🚚 Portal do Entregador ---");
@@ -70,37 +71,6 @@ public class EntregadorMenu {
                     System.out.println("Opção inválida.");
             }
         } while (opcao != 0);
-    }
-
-    private void simularLoginEntregador() {
-        try {
-            this.entregadorLogado = usuarioController.login("entregador@farmaja.com", "entregador123");
-
-            if (this.entregadorLogado == null) {
-                System.out.println("(Debug) Criando entregador padrão...");
-
-                Usuario novoEntregador = new Usuario("Entregador Padrão", "entregador@farmaja.com", "entregador123", "11122233344", "988887777", "ENTREGADOR");
-
-                // --- Correção do Endereço (usando Setters) ---
-                Endereco end = new Endereco();
-                end.setRua("Rua Faria Lima");
-                end.setNumero("1000");
-                end.setBairro("Pinheiros");
-                end.setCidade("São Paulo");
-                end.setEstado("SP");
-                end.setCep("01452-002");
-                end.setComplemento("");
-
-                // Define ID manual para teste (simulando banco)
-                novoEntregador.setId(1);
-
-                this.entregadorLogado = novoEntregador;
-            }
-        } catch (Exception e) {
-            System.out.println("(Aviso) Modo offline ou erro de conexão.");
-            this.entregadorLogado = new Usuario("Entregador Offline", "off", "off", "000", "000", "ENTREGADOR");
-            this.entregadorLogado.setId(1);
-        }
     }
 
     private void listarMinhasEntregas() {

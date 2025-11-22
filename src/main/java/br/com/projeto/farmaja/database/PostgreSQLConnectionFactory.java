@@ -4,10 +4,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class H2ConnectionFactory implements ConnectionFactory {
-    private static final String DB_URL = "jdbc:h2:./farmaja";
-    private static final String DB_USER = "sa";
-    private static final String DB_PASSWORD = "";
+public class PostgreSQLConnectionFactory implements ConnectionFactory {
+    private static final String DB_URL = "jdbc:postgresql://localhost:5432/farmaja";
+    private static final String DB_USER = "postgres";  // Usuário
+    private static final String DB_PASSWORD = "Postgresql@!8125"; // Senha
 
     private Connection connection = null;
 
@@ -15,11 +15,11 @@ public class H2ConnectionFactory implements ConnectionFactory {
     public Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
             try {
-                Class.forName("org.h2.Driver");
+                Class.forName("org.postgresql.Driver");
                 connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-                System.out.println("Conexão com banco de dados H2 estabelecida.");
+                System.out.println("Conexão com PostgreSQL estabelecida.");
             } catch (ClassNotFoundException e) {
-                throw new SQLException("Driver H2 não encontrado", e);
+                throw new SQLException("Driver PostgreSQL não encontrado", e);
             }
         }
         return connection;
@@ -30,7 +30,7 @@ public class H2ConnectionFactory implements ConnectionFactory {
         if (connection != null && !connection.isClosed()) {
             connection.close();
             connection = null;
-            System.out.println("Conexão com banco de dados H2 fechada.");
+            System.out.println("Conexão com PostgreSQL fechada.");
         }
     }
 }

@@ -1,5 +1,6 @@
 package br.com.projeto.farmaja.view.Cliente;
 
+import br.com.projeto.farmaja.controller.FavoritoController;
 import br.com.projeto.farmaja.controller.MedicamentoController;
 import br.com.projeto.farmaja.controller.PedidoController;
 import br.com.projeto.farmaja.controller.UsuarioController;
@@ -19,40 +20,43 @@ public class ClienteMenu {
     private final UsuarioDAO usuarioDAO;
     private final EnderecoDAO enderecoDAO;
     private final HistoricoEntregaDAO historicoEntregaDAO;
+    private final FornecedorDAO fornecedorDAO;
+    private final FavoritoDAO favoritoDAO;
 
     private final MedicamentoController medicamentoController;
     private final PedidoController pedidoController;
     private final UsuarioController usuarioController;
+    private final FavoritoController favoritoController;
 
     private final CatalogoView catalogoView;
 
     private final List<ItemPedido> carrinho;
     private Usuario clienteLogado;
-
-    public ClienteMenu() {
+    public ClienteMenu(Usuario usuarioLogado) {
         this.medicamentoDAO = new MedicamentoDAO();
         this.pedidoDAO = new PedidoDAO();
         this.itemPedidoDAO = new ItemPedidoDAO();
         this.usuarioDAO = new UsuarioDAO();
         this.enderecoDAO = new EnderecoDAO();
         this.historicoEntregaDAO = new HistoricoEntregaDAO();
+        this.fornecedorDAO = new FornecedorDAO();
+        this.favoritoDAO = new FavoritoDAO();
 
         this.medicamentoController = new MedicamentoController(medicamentoDAO);
         this.usuarioController = new UsuarioController(usuarioDAO, enderecoDAO);
         this.pedidoController = new PedidoController(
                 pedidoDAO, itemPedidoDAO, medicamentoDAO, usuarioDAO, historicoEntregaDAO
         );
+        this.favoritoController = new FavoritoController(favoritoDAO, medicamentoDAO, fornecedorDAO);
 
         this.catalogoView = new CatalogoView(medicamentoController);
+
         this.carrinho = new ArrayList<>();
+        this.clienteLogado = usuarioLogado;
     }
 
     public void mostrar() {
-        simularLoginCliente();
-
-        if (clienteLogado != null) {
-            System.out.println("Bem-vindo(a), " + clienteLogado.getNome());
-        }
+        System.out.println("Bem-vindo(a), " + clienteLogado.getNome());
 
         int opcao;
         do {
@@ -65,6 +69,7 @@ public class ClienteMenu {
             System.out.println("4. Ver carrinho / Finalizar pedido");
             System.out.println("5. Meus pedidos / Ver status");
             System.out.println("6. Perfil (editar dados)");
+            System.out.println("7. Meus Favoritos");
             System.out.println("0. Logout (Sair)");
 
             opcao = LeitorConsole.lerInteiro("Escolha uma opção: ");
@@ -75,7 +80,8 @@ public class ClienteMenu {
                 case 3: adicionarAoCarrinho(); break;
                 case 4: menuCarrinho(); break;
                 case 5: verMeusPedidos(); break;
-                case 6: editarPerfil(); break; // Agora funciona!
+                case 6: editarPerfil(); break;
+                case 7: menuFavoritos(); break;
                 case 0:
                     System.out.println("Fazendo logout... Até logo!");
                     break;
@@ -86,16 +92,16 @@ public class ClienteMenu {
         } while (opcao != 0);
     }
 
-    // MÉTODOS DE LÓGICA
+    // MÉTODOS DE LÓGICA (sem mudanças)
 
     private void editarPerfil() {
-        System.out.println("\n--- 👤 Editar Perfil ---");
+        System.out.println("\n--- Editar Perfil ---");
         System.out.println("Nome: " + clienteLogado.getNome());
         System.out.println("Email: " + clienteLogado.getEmail());
         System.out.println("------------------------");
         System.out.println("1. Alterar Nome");
         System.out.println("2. Alterar Senha");
-        System.out.println("3. Cadastrar Novo Endereço"); // <--- NOVA OPÇÃO
+        System.out.println("3. Cadastrar Novo Endereço");
         System.out.println("0. Voltar");
 
         int op = LeitorConsole.lerInteiro("Opção: ");
@@ -103,15 +109,17 @@ public class ClienteMenu {
         if (op == 1) {
             String novoNome = LeitorConsole.lerString("Digite o novo nome: ");
             clienteLogado.setNome(novoNome);
-            System.out.println("✅ Nome alterado (na sessão atual)!");
+            usuarioDAO.atualizar(clienteLogado);
+            System.out.println("Nome alterado com sucesso!");
 
         } else if (op == 2) {
             String novaSenha = LeitorConsole.lerString("Digite a nova senha: ");
             clienteLogado.setSenha(novaSenha);
-            System.out.println("✅ Senha alterada!");
+            usuarioDAO.atualizar(clienteLogado);
+            System.out.println("Senha alterada com sucesso!");
 
         } else if (op == 3) {
-            System.out.println("\n--- 📍 Novo Endereço ---");
+            System.out.println("\n--- Novo Endereço ---");
             String rua = LeitorConsole.lerString("Rua: ");
             String numero = LeitorConsole.lerString("Número: ");
             String bairro = LeitorConsole.lerString("Bairro: ");
@@ -121,7 +129,7 @@ public class ClienteMenu {
             String complemento = LeitorConsole.lerString("Complemento (opcional): ");
 
             Endereco novoEnd = new Endereco(
-                    clienteLogado.getId(), // ID do usuário
+                    clienteLogado.getId(),
                     rua, numero, bairro, cidade, uf, cep, complemento
             );
 
@@ -129,7 +137,7 @@ public class ClienteMenu {
                 String res = usuarioController.adicionarEndereco(novoEnd);
                 System.out.println("\n" + res);
             } catch (Exception e) {
-                System.out.println("❌ Erro ao salvar endereço: " + e.getMessage());
+                System.out.println("Erro ao salvar endereço: " + e.getMessage());
             }
         }
     }
@@ -180,7 +188,7 @@ public class ClienteMenu {
     }
 
     private void finalizarPedido() {
-        System.out.println("\n--- 🏁 Finalizando Pedido ---");
+        System.out.println("\n--- Finalizando Pedido ---");
         try {
             Endereco enderecoEntrega = selecionarEndereco();
             if (enderecoEntrega == null) return;
@@ -195,12 +203,12 @@ public class ClienteMenu {
             String resultado = pedidoController.criarNovoPedido(novoPedido, carrinho);
 
             System.out.println("\n" + resultado);
-            System.out.println("✅ Compra realizada com sucesso!");
+            System.out.println("Compra realizada com sucesso!");
             carrinho.clear();
             LeitorConsole.lerString("Pressione ENTER para voltar ao menu...");
 
         } catch (Exception e) {
-            System.out.println("❌ Erro ao finalizar pedido: " + e.getMessage());
+            System.out.println("Erro ao finalizar pedido: " + e.getMessage());
         }
     }
 
@@ -208,7 +216,8 @@ public class ClienteMenu {
         List<Endereco> enderecos = usuarioController.listarEnderecosPorUsuario(clienteLogado.getId());
 
         if (enderecos == null || enderecos.isEmpty()) {
-            System.out.println("⚠️ Você não tem endereço cadastrado!");
+            System.out.println("Você não tem endereço cadastrado!");
+            System.out.println("Vá em 'Perfil (6)' → 'Cadastrar Novo Endereço (3)'");
             return null;
         }
 
@@ -226,21 +235,8 @@ public class ClienteMenu {
         return null;
     }
 
-    private void simularLoginCliente() {
-        try {
-            this.clienteLogado = usuarioController.login("cliente@farmaja.com", "cliente123");
-            if (this.clienteLogado == null) {
-                this.clienteLogado = new Usuario("Cliente Teste", "cliente@farmaja.com", "123", "000", "000", "CLIENTE");
-                this.clienteLogado.setId(1);
-            }
-        } catch (Exception e) {
-            this.clienteLogado = new Usuario("Modo Offline", "off", "off", "000", "000", "CLIENTE");
-            this.clienteLogado.setId(1);
-        }
-    }
-
     private void buscarMedicamento() {
-        System.out.println("\n--- 🔍 Buscar Medicamento ---");
+        System.out.println("\n--- Buscar Medicamento ---");
         String termo = LeitorConsole.lerString("Digite o nome ou código: ");
         List<Medicamento> todos = medicamentoController.listarMedicamentosAtivos();
         List<Medicamento> resultados = new ArrayList<>();
@@ -255,7 +251,7 @@ public class ClienteMenu {
         }
 
         if (resultados.isEmpty()) {
-            System.out.println("❌ Nada encontrado.");
+            System.out.println("Nada encontrado.");
         } else {
             exibirTabelaMedicamentos(resultados);
         }
@@ -273,27 +269,27 @@ public class ClienteMenu {
     }
 
     private void adicionarAoCarrinho() {
-        System.out.println("\n--- 🛒 Adicionar ao Carrinho ---");
+        System.out.println("\n--- Adicionar ao Carrinho ---");
         int idProduto = LeitorConsole.lerInteiro("Digite o ID do medicamento: ");
         Medicamento med = medicamentoDAO.buscarPorId(idProduto);
 
         if (med == null || !Boolean.TRUE.equals(med.getAtivo())) {
-            System.out.println("❌ Medicamento não encontrado ou indisponível.");
+            System.out.println("Medicamento não encontrado ou indisponível.");
             return;
         }
         System.out.println("Item: " + med.getNome() + " | Preço: R$" + med.getPreco());
         int quantidade = LeitorConsole.lerInteiro("Quantidade: ");
 
         if (quantidade > med.getEstoque()) {
-            System.out.println("❌ Estoque insuficiente.");
+            System.out.println("Estoque insuficiente.");
             return;
         }
         carrinho.add(new ItemPedido(med.getId(), quantidade, med.getPreco()));
-        System.out.println("✅ Adicionado!");
+        System.out.println("Adicionado ao carrinho!");
     }
 
     private void verMeusPedidos() {
-        System.out.println("\n--- 📦 Meus Pedidos ---");
+        System.out.println("\n--- Meus Pedidos ---");
         List<Pedido> pedidos = pedidoController.listarPedidosPorCliente(clienteLogado.getId());
 
         if (pedidos == null || pedidos.isEmpty()) {
@@ -314,15 +310,164 @@ public class ClienteMenu {
         LeitorConsole.lerString("Pressione ENTER para voltar...");
     }
 
+    private void menuFavoritos() {
+        System.out.println("\n=== MEUS FAVORITOS ===");
+        System.out.println("1. Ver Medicamentos Favoritos");
+        System.out.println("2. Ver Fornecedores Favoritos");
+        System.out.println("3. Adicionar Medicamento aos Favoritos");
+        System.out.println("4. Remover Medicamento dos Favoritos");
+        System.out.println("0. Voltar");
+
+        int op = LeitorConsole.lerInteiro("Opção: ");
+
+        switch (op) {
+            case 1:
+                verMedicamentosFavoritos();
+                break;
+            case 2:
+                verFornecedoresFavoritos();
+                break;
+            case 3:
+                adicionarMedicamentoFavorito();
+                break;
+            case 4:
+                removerMedicamentoFavorito();
+                break;
+            case 0:
+                break;
+            default:
+                System.out.println("Opção inválida.");
+        }
+    }
+
+    private void verMedicamentosFavoritos() {
+        System.out.println("\n--- Meus Medicamentos Favoritos ---");
+
+        List<Favorito> favoritos = favoritoController.listarMedicamentosFavoritos(clienteLogado.getId());
+
+        if (favoritos == null || favoritos.isEmpty()) {
+            System.out.println("Você ainda não tem medicamentos favoritos.");
+            System.out.println("Use a opção '3. Adicionar Medicamento aos Favoritos' para adicionar!");
+            LeitorConsole.lerString("\nPressione ENTER para voltar...");
+            return;
+        }
+
+        System.out.println("------------------------------------------------------------");
+        System.out.printf("%-5s | %-25s | %-10s | %-10s\n", "ID", "Nome", "Preço", "Estoque");
+        System.out.println("------------------------------------------------------------");
+
+        for (Favorito fav : favoritos) {
+            Medicamento med = medicamentoDAO.buscarPorId(fav.getMedicamentoId());
+            if (med != null) {
+                String nome = med.getNome().length() > 22 ? med.getNome().substring(0, 22) + "..." : med.getNome();
+                System.out.printf("%-5d | %-25s | R$ %-7.2f | %-5d\n",
+                        med.getId(), nome, med.getPreco(), med.getEstoque());
+            }
+        }
+        System.out.println("------------------------------------------------------------");
+
+        System.out.println("\nDeseja adicionar algum ao carrinho?");
+        System.out.println("1. Sim, adicionar ao carrinho");
+        System.out.println("0. Voltar");
+
+        int op = LeitorConsole.lerInteiro("Opção: ");
+        if (op == 1) {
+            adicionarAoCarrinho();
+        }
+    }
+
+    private void verFornecedoresFavoritos() {
+        System.out.println("\n--- Meus Fornecedores Favoritos ---");
+
+        List<Favorito> favoritos = favoritoController.listarFornecedoresFavoritos(clienteLogado.getId());
+
+        if (favoritos == null || favoritos.isEmpty()) {
+            System.out.println("Você ainda não tem fornecedores favoritos.");
+            LeitorConsole.lerString("\nPressione ENTER para voltar...");
+            return;
+        }
+
+        System.out.println("------------------------------------------------------------");
+        for (Favorito fav : favoritos) {
+            Fornecedor forn = fornecedorDAO.buscarPorId(fav.getFornecedorId());
+            if (forn != null) {
+                System.out.printf("ID: %d | Nome: %s | CNPJ: %s\n",
+                        forn.getId(), forn.getNome(), forn.getCnpj());
+            }
+        }
+        System.out.println("------------------------------------------------------------");
+
+        LeitorConsole.lerString("\nPressione ENTER para voltar...");
+    }
+
+    private void adicionarMedicamentoFavorito() {
+        System.out.println("\n--- Adicionar Medicamento aos Favoritos ---");
+
+        // Mostra o catálogo primeiro
+        List<Medicamento> medicamentos = medicamentoController.listarMedicamentosAtivos();
+        if (medicamentos == null || medicamentos.isEmpty()) {
+            System.out.println("Nenhum medicamento disponível.");
+            return;
+        }
+
+        exibirTabelaMedicamentos(medicamentos);
+
+        int medicamentoId = LeitorConsole.lerInteiro("\nDigite o ID do medicamento para favoritar (0 para cancelar): ");
+
+        if (medicamentoId <= 0) {
+            System.out.println("Cancelado.");
+            return;
+        }
+
+        String resultado = favoritoController.adicionarMedicamentoFavorito(clienteLogado.getId(), medicamentoId);
+        System.out.println(resultado);
+
+        LeitorConsole.lerString("\nPressione ENTER para continuar...");
+    }
+
+    private void removerMedicamentoFavorito() {
+        System.out.println("\n--- Remover Medicamento dos Favoritos ---");
+
+        List<Favorito> favoritos = favoritoController.listarMedicamentosFavoritos(clienteLogado.getId());
+
+        if (favoritos == null || favoritos.isEmpty()) {
+            System.out.println("Você não tem medicamentos favoritos.");
+            LeitorConsole.lerString("\nPressione ENTER para voltar...");
+            return;
+        }
+
+        // Mostra os favoritos
+        System.out.println("------------------------------------------------------------");
+        for (Favorito fav : favoritos) {
+            Medicamento med = medicamentoDAO.buscarPorId(fav.getMedicamentoId());
+            if (med != null) {
+                System.out.printf("ID: %d | Nome: %s\n", med.getId(), med.getNome());
+            }
+        }
+        System.out.println("------------------------------------------------------------");
+
+        int medicamentoId = LeitorConsole.lerInteiro("\nDigite o ID do medicamento para remover (0 para cancelar): ");
+
+        if (medicamentoId <= 0) {
+            System.out.println("Cancelado.");
+            return;
+        }
+
+        String resultado = favoritoController.removerMedicamentoFavorito(clienteLogado.getId(), medicamentoId);
+        System.out.println(resultado);
+
+        LeitorConsole.lerString("\nPressione ENTER para continuar...");
+    }
+
     private String formatarStatus(String status) {
         if (status == null) return "DESCONHECIDO";
-        switch (status.toUpperCase()) {
-            case "PENDENTE": return "[⏳ PENDENTE]";
-            case "PRONTO_PARA_ENTREGA": return "[📦 PRONTO]";
-            case "EM_TRANSPORTE": return "[🚚 A CAMINHO]";
-            case "ENTREGUE": return "[✅ ENTREGUE]";
-            case "CANCELADO": return "[❌ CANCELADO]";
-            default: return status;
-        }
+        return switch (status.toUpperCase()) {
+            case "PENDENTE" -> "[PENDENTE]";
+            case "PRONTO_PARA_ENTREGA" -> "[PRONTO]";
+            case "EM_TRANSPORTE" -> "[A CAMINHO]";
+            case "ENTREGUE" -> "[ENTREGUE]";
+            case "CANCELADO" -> "[CANCELADO]";
+            default -> status;
+        };
     }
 }
