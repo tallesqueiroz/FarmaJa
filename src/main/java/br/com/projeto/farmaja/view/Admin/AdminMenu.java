@@ -28,9 +28,9 @@ public class AdminMenu {
     private final PedidoController pedidoController;
 
     private final Scanner scanner;
-    private Usuario usuarioLogado = null; // Usuário logado
+    private Usuario usuarioLogado; // Usuário logado
 
-    public AdminMenu() {
+    public AdminMenu(Usuario usuarioLogado) {
         // --- Camada DAO ---
         this.medicamentoDAO = new MedicamentoDAO();
         this.usuarioDAO = new UsuarioDAO();
@@ -47,12 +47,12 @@ public class AdminMenu {
                 pedidoDAO, itemPedidoDAO, medicamentoDAO, usuarioDAO, historicoEntregaDAO
         );
 
+        this.usuarioLogado = usuarioLogado;
+
         this.scanner = new Scanner(System.in);
     }
 
     public void mostrar() {
-        //simulando o login
-        simularLoginAdmin();
         System.out.println("Bem-vindo ao FarmaJá, " + usuarioLogado.getNome());
 
         // Loop principal
@@ -86,37 +86,6 @@ public class AdminMenu {
                     System.out.println("Opção inválida. Tente novamente.");
             }
             pressionarEnterParaContinuar();
-        }
-    }
-
-    private void simularLoginAdmin() {
-        usuarioLogado = usuarioController.login("admin@farmaja.com", "admin123");
-        if (usuarioLogado == null) {
-            System.out.println("Criando usuário ADMIN padrão...");
-            try {
-                Usuario admin = new Usuario(
-                        "Admin Padrão",
-                        "admin@farmaja.com",
-                        "admin123",
-                        "00000000000",
-                        "999999999",
-                        "ADMINISTRADOR"
-                );
-
-                Endereco end = new Endereco();
-                end.setRua("Rua da Matriz");
-                end.setNumero("123");
-                end.setBairro("Centro");
-                end.setCidade("São Paulo");
-                end.setEstado("SP");
-                end.setCep("01000-000");
-
-                usuarioController.cadastrarNovoCliente(admin, end);
-                usuarioLogado = admin;
-            } catch (IllegalArgumentException e) {
-                System.out.println("Erro crítico ao criar admin padrão: " + e.getMessage());
-                System.exit(1);
-            }
         }
     }
 

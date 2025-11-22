@@ -8,8 +8,8 @@ public class DatabaseConnection {
     private static ConnectionFactory connectionFactory;
 
     static {
-        // Inicializa com H2 por padrão
-        connectionFactory = new H2ConnectionFactory();
+        // PostgreSQL
+        connectionFactory = new PostgreSQLConnectionFactory();
     }
 
     public static void setConnectionFactory(ConnectionFactory factory) {
@@ -27,7 +27,7 @@ public class DatabaseConnection {
             // Tabela de Usuários
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS usuarios (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     nome VARCHAR(100) NOT NULL,
                     email VARCHAR(100) UNIQUE NOT NULL,
                     senha VARCHAR(100) NOT NULL,
@@ -42,8 +42,8 @@ public class DatabaseConnection {
             // Tabela de Endereços
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS enderecos (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    usuario_id INT NOT NULL,
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER NOT NULL,
                     rua VARCHAR(200) NOT NULL,
                     numero VARCHAR(10) NOT NULL,
                     complemento VARCHAR(100),
@@ -58,7 +58,7 @@ public class DatabaseConnection {
             // Tabela de Fornecedores
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS fornecedores (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     nome VARCHAR(100) NOT NULL,
                     cnpj VARCHAR(18) UNIQUE NOT NULL,
                     telefone VARCHAR(15),
@@ -70,14 +70,14 @@ public class DatabaseConnection {
             // Tabela de Medicamentos
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS medicamentos (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     codigo VARCHAR(50) UNIQUE NOT NULL,
                     nome VARCHAR(200) NOT NULL,
                     descricao TEXT,
                     preco DECIMAL(10,2) NOT NULL,
-                    estoque INT NOT NULL DEFAULT 0,
-                    estoque_minimo INT NOT NULL DEFAULT 10,
-                    fornecedor_id INT,
+                    estoque INTEGER NOT NULL DEFAULT 0,
+                    estoque_minimo INTEGER NOT NULL DEFAULT 10,
+                    fornecedor_id INTEGER,
                     requer_receita BOOLEAN DEFAULT FALSE,
                     ativo BOOLEAN DEFAULT TRUE,
                     data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -88,10 +88,10 @@ public class DatabaseConnection {
             // Tabela de Pedidos
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS pedidos (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    cliente_id INT NOT NULL,
-                    entregador_id INT,
-                    endereco_id INT NOT NULL,
+                    id SERIAL PRIMARY KEY,
+                    cliente_id INTEGER NOT NULL,
+                    entregador_id INTEGER,
+                    endereco_id INTEGER NOT NULL,
                     valor_total DECIMAL(10,2) NOT NULL,
                     status VARCHAR(30) NOT NULL,
                     forma_pagamento VARCHAR(30),
@@ -107,10 +107,10 @@ public class DatabaseConnection {
             // Tabela de Itens do Pedido
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS itens_pedido (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    pedido_id INT NOT NULL,
-                    medicamento_id INT NOT NULL,
-                    quantidade INT NOT NULL,
+                    id SERIAL PRIMARY KEY,
+                    pedido_id INTEGER NOT NULL,
+                    medicamento_id INTEGER NOT NULL,
+                    quantidade INTEGER NOT NULL,
                     preco_unitario DECIMAL(10,2) NOT NULL,
                     subtotal DECIMAL(10,2) NOT NULL,
                     FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE,
@@ -121,9 +121,9 @@ public class DatabaseConnection {
             // Tabela de Histórico de Entregas
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS historico_entregas (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    pedido_id INT NOT NULL,
-                    entregador_id INT,
+                    id SERIAL PRIMARY KEY,
+                    pedido_id INTEGER NOT NULL,
+                    entregador_id INTEGER,
                     status_anterior VARCHAR(30),
                     status_novo VARCHAR(30) NOT NULL,
                     data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -133,15 +133,34 @@ public class DatabaseConnection {
                 )
             """);
 
-            // Inserir usuário admin padrão
+            // Tabela de Favoritos
             stmt.execute("""
-                MERGE INTO usuarios (nome, email, senha, cpf, telefone, tipo_usuario)
-                KEY(email)
-                VALUES ('Administrador', 'admin@farmaja.com', 'admin123', '000.000.000-00', 
-                        '(00) 00000-0000', 'ADMINISTRADOR')
+                CREATE TABLE IF NOT EXISTS favoritos (
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER NOT NULL,
+                    medicamento_id INTEGER,
+                    fornecedor_id INTEGER,
+                    tipo_favorito VARCHAR(20) NOT NULL,
+                    data_adicionado TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+                    FOREIGN KEY (medicamento_id) REFERENCES medicamentos(id) ON DELETE CASCADE,
+                    FOREIGN KEY (fornecedor_id) REFERENCES fornecedores(id) ON DELETE CASCADE,
+                    CONSTRAINT chk_favorito CHECK (
+                        (tipo_favorito = 'MEDICAMENTO' AND medicamento_id IS NOT NULL AND fornecedor_id IS NULL) OR
+                        (tipo_favorito = 'FORNECEDOR' AND fornecedor_id IS NOT NULL AND medicamento_id IS NULL)
+                    )
+                )
             """);
 
-            System.out.println("Banco de dados inicializado com sucesso!");
+            // Inserir usuário admin padrão (usando INSERT com ON CONFLICT para PostgreSQL)
+            stmt.execute("""
+                INSERT INTO usuarios (nome, email, senha, cpf, telefone, tipo_usuario)
+                VALUES ('Administrador', 'admin@farmaja.com', 'admin123', '000.000.000-00', 
+                        '(00) 00000-0000', 'ADMINISTRADOR')
+                ON CONFLICT (email) DO NOTHING
+            """);
+
+            System.out.println("Banco de dados PostgreSQL inicializado com sucesso!");
 
         } catch (SQLException e) {
             System.err.println("Erro ao inicializar banco de dados: " + e.getMessage());
